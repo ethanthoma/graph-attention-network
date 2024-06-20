@@ -1,8 +1,5 @@
-import os
-import networkx as nx
-import pandas as pd
 import numpy as np
-from tinygrad.tensor import Tensor
+from tinygrad import Tensor
 
 import scipy.sparse as sp
 
@@ -31,29 +28,20 @@ def fetch_cora(tensors=False):
         labels.shape[0], labels.shape[0]), dtype=np.float32)
 
     # build symmetric adjacency matrix
-    adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
     features = normalize_features(features)
+    adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
     adj = normalize_adj(adj + sp.eye(adj.shape[0]))
 
-    idx_train = range(250)
-    idx_test = range(250, 1500)
-
-    adj = np.array(adj.todense())
     features = np.array(features.todense())
+    adj = np.array(adj.todense())
     labels = np.where(labels)[1]
 
-    X_train = (features[idx_train], adj[idx_train, idx_train])
-    Y_train = labels[idx_train]
-    X_test = (features[idx_test], adj[idx_test, idx_test])
-    Y_test = labels[idx_test]
-
     if tensors:
-        X_train = (Tensor(X_train[0]), Tensor(X_train[1]))
-        Y_train = Tensor(Y_train)
-        X_test = (Tensor(X_test[0]), Tensor(X_test[1]))
-        Y_test = Tensor(Y_test)
+        features = Tensor(features)
+        adj = Tensor(adj)
+        labels = Tensor(labels)
 
-    return X_train, Y_train, X_test, Y_test
+    return features, adj, labels
 
 
 def encode_onehot(labels):

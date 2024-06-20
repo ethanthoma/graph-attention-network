@@ -3,11 +3,12 @@ from tinygrad import Tensor
 
 class GATLayer:
     def __init__(self, in_features: int, out_features: int, n_heads: int,
-                 alpha: float = 0.01):
+                 alpha: float = 0.01, dropout: float = 0.6):
         self.in_features: int = in_features
         self.out_features: int = out_features
         self.n_heads: int = n_heads
         self.alpha: float = alpha
+        self.dropout = dropout
 
         self.W: Tensor = Tensor.glorot_uniform(
             in_features, out_features * n_heads)
@@ -16,9 +17,9 @@ class GATLayer:
     def __call__(self, x: Tensor, adjacency_matrix: Tensor) -> Tensor:
         n_nodes = x.shape[0]
 
-        x = Tensor.dropout(x)
+        x = x.dropout(self.dropout)
         x = x.linear(self.W)
-        x = Tensor.dropout(x)
+        x = x.dropout(self.dropout)
         x = x.view(n_nodes, self.n_heads, self.out_features).permute(1, 0, 2)
 
         source_scores = Tensor.einsum(
@@ -34,7 +35,7 @@ class GATLayer:
                                  attention, connectivity_mask)
 
         attention = attention.softmax(-1)
-        attention = Tensor.dropout(attention)
+        attention = attention.dropout(self.dropout)
 
         x = Tensor.einsum('bij,bjk->bik', attention, x)
         x = x.mean(0)
